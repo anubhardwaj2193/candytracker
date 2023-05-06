@@ -1,0 +1,310 @@
+<html>
+    <head>
+        <style>
+          /* Add CSS styles here */
+
+          
+          h1 {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        font-size: 48px;
+        color: #ff8c00;
+        text-shadow: 2px 2px #333;
+        margin-top: 50px;
+      }
+      
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f2f2f2;
+            
+          }
+          span{
+            border: 1px solid black;
+            color: red;
+          }
+    
+          form {
+            display: flex;
+            flex-direction: column;
+            max-width: 500px;
+            margin: 0 auto;
+          }
+    
+          label {
+            margin-top: 10px;
+          }
+    
+          input[type="text"],
+          input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+          }
+    
+          button[type="submit"] {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          }
+    
+          ul {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+          }
+    
+          li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+          }
+    
+          input[type="button"],
+          input[type="submit"] {
+            background-color: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+          }
+        </style>
+      </head>
+  <body>
+    <h1>Candy Tracker</h1>
+    <form onsubmit="saveToLocalStorage(event)">
+      <label>Candy Name</label>
+      <input id="candyname" type="text" name="candyname" required />
+
+      <label>Choose description</label>
+      <input id="description" type="text" name="description" required />
+      <label>Price</label>
+      <input id="amount" type="number" name="amount" required />
+      <label>Quantity:</label>
+      <input id="quantity" type="number" name="quantity" required />
+
+      <button type="submit">Add Item</button>
+    </form>
+    <ul id="list of items"></ul>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.3.6/axios.min.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", (event) => {
+        getdata();
+      });
+
+      function getdata() {
+        axios
+          .get(
+            "https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA"
+          )
+          .then((response) => {
+            console.log(response);
+            for (var i = 0; i < response.data.length; i++) {
+              showUserOnScreen(response.data[i]);
+            }
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+      }
+
+      function saveToLocalStorage(event) {
+        event.preventDefault();
+        const candyname = event.target.candyname.value;
+        const description = event.target.description.value;
+        const amount = event.target.amount.value;
+        const quantity = event.target.quantity.value;
+        const obj = { candyname, description, amount, quantity };
+console.log(obj)
+        axios
+          .post(
+            "https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA",
+            obj
+          )
+          .then((response) => {
+            showUserOnScreen(response.data);
+            console.log(response);
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+
+        localStorage.setItem(obj.description, JSON.stringify(obj));
+        //showUserOnScreen(obj)
+
+        event.target.candyname.value = "";
+        event.target.description.value = "";
+        event.target.amount.value = "";
+        event.target.quantity.value = "";
+      }
+      function showUserOnScreen(obj) {
+        const parentElem = document.getElementById("list of items");
+        const childElem = document.createElement("li");
+        childElem.textContent =obj.candyname+'-'+obj.description+'-'+ obj.amount+''
+
+        const deleteButton = document.createElement("input");
+        deleteButton.type = "button";
+        deleteButton.value = "DeleteItem";
+        deleteButton.onclick = () => {
+          localStorage.removeItem(obj.description);
+          deleteUserFromCrud(obj._id);
+          parentElem.removeChild(childElem);
+        };
+
+        const editButton = document.createElement("input");
+        editButton.type = "button";
+        editButton.value = "EditItem";
+        editButton.onclick = () => {
+          localStorage.removeItem(obj.description);
+          deleteUserFromCrud(obj._id);
+          parentElem.removeChild(childElem);
+          document.getElementById("candyname").value = obj.candyname;
+          document.getElementById("amount").value = obj.amount;
+          document.getElementById("description").value = obj.description;
+          document.getElementById("quantity").value = obj.quantity;
+        };
+
+        const Buy1Button = document.createElement("input");
+        Buy1Button.type = "submit";
+        Buy1Button.value = "Buy 1";
+        Buy1Button.onclick = () => {
+  axios
+    .get(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`)
+    .then((response) => {
+      const itemData = response.data;
+      itemData.quantity -= 1;
+      console.log(itemData);
+
+      const putData = {
+        candyname: itemData.candyname,
+        description: itemData.description,
+        amount: itemData.amount,
+        quantity: itemData.quantity,
+      };
+
+      axios
+        .put(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`, putData)
+        .then((response) => {
+          console.log(response.data);
+          obj.quantity = itemData.quantity;
+          const quantitySpan = document.getElementById(`quantity-${obj._id}`);
+          quantitySpan.textContent = obj.quantity; // Update the quantity text content
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
+        const Buy2Button = document.createElement("input");
+        Buy2Button.type = "button";
+        Buy2Button.value = "Buy 2";
+        Buy2Button.onclick = () => {
+  axios
+    .get(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`)
+    .then((response) => {
+      const itemData = response.data;
+      itemData.quantity -= 2;
+      console.log(itemData);
+
+      const putData = {
+        candyname: itemData.candyname,
+        description: itemData.description,
+        amount: itemData.amount,
+        quantity: itemData.quantity,
+      };
+
+      axios
+        .put(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`, putData)
+        .then((response) => {
+          console.log(response.data);
+          obj.quantity = itemData.quantity;
+          const quantitySpan = document.getElementById(`quantity-${obj._id}`);
+          quantitySpan.textContent = obj.quantity; // Update the quantity text content
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
+        const Buy3Button = document.createElement("input");
+        Buy3Button.type = "button";
+        Buy3Button.value = "Buy 3";
+        Buy3Button.onclick = () => {
+  axios
+    .get(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`)
+    .then((response) => {
+      const itemData = response.data;
+      itemData.quantity -= 3;
+      console.log(itemData);
+
+      const putData = {
+        candyname: itemData.candyname,
+        description: itemData.description,
+        amount: itemData.amount,
+        quantity: itemData.quantity,
+      };
+
+      axios
+        .put(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${obj._id}`, putData)
+        .then((response) => {
+          console.log(response.data);
+          obj.quantity = itemData.quantity;
+          const quantitySpan = document.getElementById(`quantity-${obj._id}`);
+          quantitySpan.textContent = obj.quantity; // Update the quantity text content
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+};
+
+
+
+        const quantitySpan = document.createElement("span");
+  quantitySpan.textContent = obj.quantity;
+  quantitySpan.id = `quantity-${obj._id}`; // Add an ID to the quantity span element
+
+
+  childElem.appendChild(quantitySpan);
+        childElem.appendChild(Buy1Button);
+        childElem.appendChild(Buy2Button);
+        childElem.appendChild(Buy3Button);
+        childElem.appendChild(deleteButton);
+        childElem.appendChild(editButton);
+        parentElem.appendChild(childElem);
+      }
+
+      function deleteUserFromCrud(Id){
+        axios.delete(`https://crudcrud.com/api/4820e0159d2d4c338cad0b6c8376e8e7/CANDYDATA/${Id}`)
+        .then((response) => {
+        console.log('deleted')
+
+        })
+        .catch((err) => {
+            console.log(err)
+        })
+    }
+    </script>
+  </body>
+</html>
